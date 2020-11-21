@@ -37,7 +37,7 @@ task finalize_bams {
 
     String single = if(defined(insing)) then "1" else "0"
     String run_prefix = if(is_nersc) then "shifter --image=" + container + " -- " else ""    
-    String java="-Xmx50g"
+    String java="-Xmx20g"
     String filename_outsam="pairedMapped.sam.gz"
     String filename_sorted="pairedMapped_sorted.bam"
     String filename_sorted_idx="pairedMapped_sorted.bam.bai"

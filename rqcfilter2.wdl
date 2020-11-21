@@ -41,7 +41,7 @@ task rqcfilter{
 	fi
 	touch ${filename_readlen}
 	${run_prefix} readlength.sh -Xmx1g in=${rqcfilter_input} out=${filename_readlen} overwrite ;
-        ${run_prefix} rqcfilter2.sh -Xmx45g jni=t in=${rqcfilter_input} rqcfilterdata=/data/RQCFilterData/ \
+        ${run_prefix} rqcfilter2.sh -Xmx30g jni=t in=${rqcfilter_input} rqcfilterdata=/data/RQCFilterData/ \
         path=filter rna=f trimfragadapter=t qtrim=r trimq=0 maxns=3 maq=3 minlen=51 \
         mlf=0.33 phix=t removehuman=t removedog=t removecat=t removemouse=t khist=t \
         removemicrobes=t sketch kapa=t clumpify=t tmpdir= barcodefilter=f trimpolyg=5 usejni=f \

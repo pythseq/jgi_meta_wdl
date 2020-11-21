@@ -110,7 +110,7 @@ task create_agp {
     runtime { docker: container}         
 
     command{
-        ${run_prefix} fungalrelease.sh -Xmx40g in=${scaffolds_in} out=${filename_scaffolds} \
+        ${run_prefix} fungalrelease.sh -Xmx20g in=${scaffolds_in} out=${filename_scaffolds} \
         outc=${filename_contigs} agp=${filename_agp} legend=${filename_legend} \
         mincontig=200 minscaf=200 sortscaffolds=t sortcontigs=t overwrite=t
     }
