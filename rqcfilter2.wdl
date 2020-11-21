@@ -28,29 +28,31 @@ task rqcfilter{
 
      String java="-Xmx20g"
      String dollar="$"
-#     runtime { backend : "Local"} 
+     runtime {
+     	     docker: container
+     } 
 
     command {
         if [ ${single} == 0 ]
 	then
 	    cat ${sep = " " reads_files } > ${rqcfilter_input}
 	else
-	    ln -s ${reads_files[0]} ./${rqcfilter_input}
+	    cp ${reads_files[0]} ./${rqcfilter_input}
 	fi
 	touch ${filename_readlen}
-	${run_prefix} readlength.sh -Xmx1g in=${rqcfilter_input} out=${filename_readlen} overwrite 
-    ${run_prefix} rqcfilter2.sh jni=t in=${rqcfilter_input} \
+	${run_prefix} readlength.sh -Xmx1g in=${rqcfilter_input} out=${filename_readlen} overwrite ;
+        ${run_prefix} rqcfilter2.sh -Xmx45g jni=t in=${rqcfilter_input} rqcfilterdata=/data/RQCFilterData/ \
         path=filter rna=f trimfragadapter=t qtrim=r trimq=0 maxns=3 maq=3 minlen=51 \
         mlf=0.33 phix=t removehuman=t removedog=t removecat=t removemouse=t khist=t \
         removemicrobes=t sketch kapa=t clumpify=t tmpdir= barcodefilter=f trimpolyg=5 usejni=f \
-        out=../${rqcfilter_output} 1> ${filename_outlog} 2> ${filename_errlog}
+        out=${rqcfilter_output} ;
      }
      output {
-     		Array[File] outrqcfilter = glob(rqcfilter_output)
+     	    Array[File] outrqcfilter = glob("filter/${rqcfilter_output}")
             File outreadlen = filename_readlen
-            File stdout = filename_outlog
-            File stderr = filename_errlog
 
      }
 
 }
+#            File stdout = filename_outlog
+#            File stderr = filename_errlog

@@ -44,12 +44,12 @@ task finalize_bams {
     String filename_cov="pairedMapped_sorted.bam.cov"
     String filename_flagstat="pairedMapped_sorted.bam.flagstat"    
     String dollar="$"
-#    runtime { backend: "Local"}
+    runtime { docker: container}
 
     command{
         if [ ${single} == "1" ]
         then
-                ln -s ${insing} ${filename_sorted}      
+                cp ${insing} ${filename_sorted}      
         else
                 ${run_prefix} samtools merge ${filename_sorted} ${sep=" " inmult}
         fi
@@ -78,15 +78,13 @@ task mappingtask {
     String filename_unsorted="pairedMapped.bam"
     String filename_sorted="pairedMapped_sorted.bam"
     String dollar="$"
-    
-#    runtime { backend: "Local"}
-
+    runtime { docker: container}    
 
     command{
         ${run_prefix} bbmap.sh threads=${dollar}(nproc)  nodisk=true \
         interleaved=true ambiguous=random rgid=filename \
         in=${reads} ref=${reference} out=${filename_unsorted}
-        ${run_prefix} samtools sort -m200M -@ ${dollar}(nproc) ${filename_unsorted} -o ${filename_sorted}
+        ${run_prefix} samtools sort -m100M -@ ${dollar}(nproc) ${filename_unsorted} -o ${filename_sorted};
   }
   output{
       File outbamfile = filename_sorted

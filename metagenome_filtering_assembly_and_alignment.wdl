@@ -5,10 +5,9 @@ import "mapping.wdl" as mapping
 workflow metagenome_filtering_assembly_and_alignment {
     Array[File] input_files
     Boolean nersc = false
-
-	call rqcfilter2.rqcfilter2 as filter {
-		input: input_files=input_files, nersc=nersc
-	}
+    call rqcfilter2.rqcfilter2 as filter {
+        input: input_files=input_files, nersc=nersc
+    }
     call metagenome_assy.metagenome_assy as assy {
         input: input_files=filter.final_filtered, nersc=nersc
     }

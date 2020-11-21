@@ -44,7 +44,7 @@ task bbcms{
 
      String java="-Xmx20g"
      String dollar="$"
-#     runtime { backend : "Local"} 
+     runtime { docker: container} 
 
      command {
         if [ ${single} == 0 ]
@@ -84,7 +84,7 @@ task assy{
     String filename_outfile="${outprefix}/scaffolds.fasta"
     String filename_spadeslog ="${outprefix}/spades.log"
     String dollar="$"
-#    runtime { backend : "Local"}
+    runtime { docker: container}     
 
     command{
        ${run_prefix} spades.py -m 2000 --tmp-dir ${dollar}PWD -o ${outprefix} --only-assembler -k 33,55,77,99,127 --meta -t ${dollar}(nproc) -1 ${infile1} -2 ${infile2}
@@ -107,9 +107,10 @@ task create_agp {
     String filename_scaffolds="${prefix}.scaffolds.fasta"
     String filename_agp="${prefix}.agp"
     String filename_legend="${prefix}.scaffolds.legend"
-#     runtime { backend : "Local"} 
+    runtime { docker: container}         
+
     command{
-        ${run_prefix} fungalrelease.sh -Xmx105g in=${scaffolds_in} out=${filename_scaffolds} \
+        ${run_prefix} fungalrelease.sh -Xmx40g in=${scaffolds_in} out=${filename_scaffolds} \
         outc=${filename_contigs} agp=${filename_agp} legend=${filename_legend} \
         mincontig=200 minscaf=200 sortscaffolds=t sortcontigs=t overwrite=t
     }
