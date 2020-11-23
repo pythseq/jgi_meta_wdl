@@ -1,11 +1,6 @@
 # jgi_meta_wdl
 
-### Run commands:
-java -jar cromwell.jar run metagenome_filtering_assembly_and_alignment.wdl -i inputs.son
-
-### inputs.json
-{
-  "metagenome_filtering_assembly_and_alignment.input_files": [
-    "/path/to/file.fastq.gz"
-  ]
-}
+![alt text](images/1.png "Titll")
+![alt text](images/2.png "Titll")
+![alt text](images/3.png "Titll")
+![alt text](images/4.png "Titll")
