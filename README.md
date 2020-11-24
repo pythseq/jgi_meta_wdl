@@ -36,7 +36,7 @@ Zymobiomics mock-community DNA control ([SRR7877884](https://www.ebi.ac.uk/ena/b
 
 ### Example instructions for installing and running the metagenome assembly pipeline on Amazon Web Services
 
-- Launch an instance using an AMI that includes docker ( ie amzn-ami-2018.03.20200205-amazon-ecs-optimized - ami-0683e2d253e41f366). The test data provided can be run with a r5.4xlarge instance with 300G of storage mounted to / (root). See current pricing.
+- Launch an instance using an AMI that includes docker ( ie amzn-ami-2018.03.20200205-amazon-ecs-optimized - ami-0683e2d253e41f366). The test data provided can be run with a r5.4xlarge instance with 300G of storage mounted to / (root). See [current pricing](https://aws.amazon.com/ec2/pricing/on-demand/).
 - Connect to your ec2 instance using ssh.
 
 
