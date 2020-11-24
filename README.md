@@ -1,5 +1,3 @@
-# jgi_meta_wdl
-
 # Summary
 
 ## Introduction
