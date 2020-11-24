@@ -32,7 +32,7 @@ mkdir data; cd data; wget -O - http://portal.nersc.gov/dna/metagenome/assembly/r
 echo '{"metagenome_filtering_assembly_and_alignment.input_files": ["/tmp/SRR7877884.fastq.gz"]}' > inputs.json
 
 # Run pipeline.
-cromwell -Dconfig.file=jgi_meta_wdl/local.conf run -i input.json jgi_meta_wdl/metagenome_filtering_assembly_and_alignment.wdl
+cromwell -Dconfig.file=jgi_meta_wdl/local.conf run -i inputs.json jgi_meta_wdl/metagenome_filtering_assembly_and_alignment.wdl
 ```
 
 ![alt text](images/4.png "Title")
