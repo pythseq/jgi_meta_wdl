@@ -1,18 +1,17 @@
 workflow metagenome_assy {
     Array[File] input_files
-    Boolean nersc = false
 
     String bbtools_container="bryce911/bbtools:38.86"
     String spades_container="bryce911/spades:3.14.1"
 
     call bbcms {
-    	 input: reads_files=input_files, is_nersc=nersc, container=bbtools_container
+    	 input: reads_files=input_files, container=bbtools_container
     }
     call assy {
-    	 input: infile1=bbcms.out1, infile2=bbcms.out2, is_nersc=nersc, container=spades_container    
+    	 input: infile1=bbcms.out1, infile2=bbcms.out2, container=spades_container    
     }
     call create_agp {
-         input: scaffolds_in=assy.out, is_nersc=nersc, container=bbtools_container
+         input: scaffolds_in=assy.out, container=bbtools_container
     }
     output {
         File final_contigs = create_agp.outcontigs
@@ -27,8 +26,6 @@ task bbcms{
     Array[File] reads_files
 
     String container
-    Boolean is_nersc
-    String run_prefix = if(is_nersc) then "shifter --image=" + container + " -- " else ""    
     String single = if (length(reads_files) == 1 ) then "1" else "0"
 
     String bbcms_input = "bbcms.input.fastq.gz"
@@ -54,8 +51,8 @@ task bbcms{
 	    ln -s ${reads_files[0]} ./${bbcms_input}
 	fi
 	touch ${filename_readlen}
-	${run_prefix} readlength.sh -Xmx1g in=${bbcms_input} out=${filename_readlen} overwrite 
-        ${run_prefix} bbcms.sh ${java} metadatafile=${filename_counts} mincount=2 highcountfraction=0.6 \
+	readlength.sh -Xmx1g in=${bbcms_input} out=${filename_readlen} overwrite 
+        bbcms.sh ${java} metadatafile=${filename_counts} mincount=2 highcountfraction=0.6 \
 	    in=${bbcms_input} out1=${filename_outfile1} out2=${filename_outfile2} \
 	    1> ${filename_outlog} 2> ${filename_errlog}
 
@@ -77,8 +74,6 @@ task assy{
     File infile2    
 
     String container
-    Boolean is_nersc
-    String run_prefix = if(is_nersc) then "shifter --image=" + container + " -- " else ""    
 
     String outprefix="spades3"
     String filename_outfile="${outprefix}/scaffolds.fasta"
@@ -87,7 +82,7 @@ task assy{
     runtime { docker: container}     
 
     command{
-       ${run_prefix} spades.py -m 2000 --tmp-dir ${dollar}PWD -o ${outprefix} --only-assembler -k 33,55,77,99,127 --meta -t ${dollar}(nproc) -1 ${infile1} -2 ${infile2}
+       spades.py -m 2000 --tmp-dir ${dollar}PWD -o ${outprefix} --only-assembler -k 33,55,77,99,127 --meta -t ${dollar}(nproc) -1 ${infile1} -2 ${infile2}
     }
     output {
            File out = filename_outfile
@@ -99,9 +94,6 @@ task create_agp {
     File scaffolds_in
     String container
     String prefix="assembly"
-
-    Boolean is_nersc
-    String run_prefix = if(is_nersc) then "shifter --image=" + container + " -- " else ""    
     
     String filename_contigs="${prefix}.contigs.fasta"
     String filename_scaffolds="${prefix}.scaffolds.fasta"
@@ -110,7 +102,7 @@ task create_agp {
     runtime { docker: container}         
 
     command{
-        ${run_prefix} fungalrelease.sh -Xmx20g in=${scaffolds_in} out=${filename_scaffolds} \
+        fungalrelease.sh -Xmx20g in=${scaffolds_in} out=${filename_scaffolds} \
         outc=${filename_contigs} agp=${filename_agp} legend=${filename_legend} \
         mincontig=200 minscaf=200 sortscaffolds=t sortcontigs=t overwrite=t
     }
