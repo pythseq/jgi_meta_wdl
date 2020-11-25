@@ -50,7 +50,7 @@ bash Miniconda3-latest-Linux-x86_64.sh -b -p $PWD/miniconda3
 source miniconda3/etc/profile.d/conda.sh && conda activate
 
 # Install git and cromwell.
-conda install -c conda-forge git cromwell -y
+conda install -c conda-forge git cromwell jq -y
 
 # Change directory to /tmp and download code.
 cd /tmp; git clone https://code.jgi.doe.gov/BFoster/jgi_meta_wdl
@@ -69,7 +69,11 @@ mkdir data; cd data; wget -O - http://portal.nersc.gov/dna/metagenome/assembly/r
 echo '{"metagenome_filtering_assembly_and_alignment.input_files": ["/tmp/SRR7877884.fastq.gz"]}' > inputs.json
 
 # Run pipeline.
-cromwell -Dconfig.file=jgi_meta_wdl/local.conf run -i inputs.json jgi_meta_wdl/metagenome_filtering_assembly_and_alignment.wdl
+cromwell -Dconfig.file=jgi_meta_wdl/local.conf run -i inputs.json -m output.metadata.json jgi_meta_wdl/metagenome_filtering_assembly_and_alignment.wdl
+
+# display outputs
+jq .outputs output.metadata.json
+
 ```
 
 ### Output files
