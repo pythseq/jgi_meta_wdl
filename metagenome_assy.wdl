@@ -39,7 +39,7 @@ task bbcms{
      String filename_errlog="stderr.log"
      String filename_kmerfile="unique31mer.txt"
 
-     String java="-Xmx20g"
+     String java="-Xmx100g"
      String dollar="$"
      runtime { docker: container} 
 
