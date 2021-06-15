@@ -1,8 +1,8 @@
 workflow metagenome_assy {
     Array[File] input_files
 
-    String bbtools_container="bryce911/bbtools:38.86"
-    String spades_container="bryce911/spades:3.14.1"
+    String bbtools_container="bryce911/bbtools:38.90"
+    String spades_container="bryce911/spades:3.15.2"
 
     call bbcms {
     	 input: reads_files=input_files, container=bbtools_container
