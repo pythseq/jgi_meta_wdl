@@ -1,8 +1,8 @@
 workflow metagenome_assy {
     Array[File] input_files
 
-    String bbtools_container="bryce911/bbtools:38.86"
-    String spades_container="bryce911/spades:3.14.1"
+    String bbtools_container="bryce911/bbtools:38.90"
+    String spades_container="bryce911/spades:3.15.2"
 
     call bbcms {
     	 input: reads_files=input_files, container=bbtools_container
@@ -39,7 +39,7 @@ task bbcms{
      String filename_errlog="stderr.log"
      String filename_kmerfile="unique31mer.txt"
 
-     String java="-Xmx20g"
+     String java="-Xmx100g"
      String dollar="$"
      runtime { docker: container} 
 
@@ -99,10 +99,13 @@ task create_agp {
     String filename_scaffolds="${prefix}.scaffolds.fasta"
     String filename_agp="${prefix}.agp"
     String filename_legend="${prefix}.scaffolds.legend"
+    String java="-Xmx40g"
+
     runtime { docker: container}         
 
+
     command{
-        fungalrelease.sh -Xmx20g in=${scaffolds_in} out=${filename_scaffolds} \
+        fungalrelease.sh ${java} in=${scaffolds_in} out=${filename_scaffolds} \
         outc=${filename_contigs} agp=${filename_agp} legend=${filename_legend} \
         mincontig=200 minscaf=200 sortscaffolds=t sortcontigs=t overwrite=t
     }
