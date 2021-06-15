@@ -1,18 +1,17 @@
 workflow metatranscriptome_assy {
     Array[File] input_files
-    Boolean nersc = false
 
     String bbtools_container="bryce911/bbtools:38.86"
     String megahit_container_prod="vout/megahit:release-v1.2.9"
 
     call readstats_raw {
-    	 input: reads_files=input_files, is_nersc=nersc, container=bbtools_container
+    	 input: reads_files=input_files, container=bbtools_container
     }
     call assy {
-         input: reads_files=input_files, is_nersc=nersc, container=megahit_container_prod
+         input: reads_files=input_files, container=megahit_container_prod
     }
     call create_agp {
-         input: contigs_in=assy.out, is_nersc=nersc, container=bbtools_container
+         input: contigs_in=assy.out, container=bbtools_container
     }
     output {
         File final_contigs = create_agp.outcontigs
@@ -27,8 +26,6 @@ task readstats_raw {
      Array[File] reads_files
      String container
 
-     Boolean is_nersc
-     String run_prefix = if(is_nersc) then "shifter --image=" + container + " -- " else ""    
      String single = if (length(reads_files) == 1 ) then "1" else "0"
 
      String reads_input="reads.input.fastq.gz"
@@ -42,7 +39,7 @@ task readstats_raw {
 	    ln -s ${reads_files[0]} ./${reads_input}
 	fi
 
-        ${run_prefix} readlength.sh in=${reads_input} 1>| ${outfile}
+        readlength.sh in=${reads_input} 1>| ${outfile}
      }
      output {
          File outreadlen = outfile
@@ -53,8 +50,6 @@ task assy {
      Array[File] reads_files
      String container
 
-     Boolean is_nersc
-     String run_prefix = if(is_nersc) then "shifter --image=" + container + " -- " else ""    
      String single = if (length(reads_files) == 1 ) then "1" else "0"
 
      String reads_input="reads.input.fastq.gz"
@@ -73,7 +68,7 @@ task assy {
 	    ln -s ${reads_files[0]} ./${reads_input}
 	fi
 
-	${run_prefix} megahit -t ${dollar}(nproc) --k-list  23,43,63,83,103,123 -m 100000000000 -o ${outprefix} --12 ${reads_input}
+	megahit -t ${dollar}(nproc) --k-list  23,43,63,83,103,123 -m 100000000000 -o ${outprefix} --12 ${reads_input}
 	echo " -t ${dollar}(nproc) --k-list  23,43,63,83,103,123 -m 100000000000 -o ${outprefix} --12 ${reads_input}" >| ${filename_outfile_opts}	
      }
      output {
@@ -87,9 +82,6 @@ task create_agp {
     File contigs_in
     String container
 
-    Boolean is_nersc
-    String run_prefix = if(is_nersc) then "shifter --image=" + container + " -- " else ""    
-
     String java="-Xmx48g"
     String prefix="assembly"
     String filename_contigs="${prefix}.contigs.fasta"
@@ -99,7 +91,7 @@ task create_agp {
     #runtime {backend: "Local"}
 
     command{
-        ${run_prefix} fungalrelease.sh ${java} in=${contigs_in} out=${filename_scaffolds} outc=${filename_contigs} agp=${filename_agp} legend=${filename_legend} mincontig=200 minscaf=200 sortscaffolds=t sortcontigs=t overwrite=t
+        fungalrelease.sh ${java} in=${contigs_in} out=${filename_scaffolds} outc=${filename_contigs} agp=${filename_agp} legend=${filename_legend} mincontig=200 minscaf=200 sortscaffolds=t sortcontigs=t overwrite=t
   }
     output{
 	File outcontigs = filename_contigs
