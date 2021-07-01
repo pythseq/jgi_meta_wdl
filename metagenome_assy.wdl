@@ -41,7 +41,7 @@ task bbcms{
      String filename_kmerfile="unique31mer.txt"
 
      String java="-Xmx100g"
-     String dollar="$"
+     String awk="{print $NF}"
      runtime { docker: container} 
 
      command {
@@ -57,7 +57,7 @@ task bbcms{
 	    in=${bbcms_input} out1=${filename_outfile1} out2=${filename_outfile2} \
 	    1> ${filename_outlog} 2> ${filename_errlog}
 	reformat.sh in1=${filename_outfile1} in2=${filename_outfile2} out=${filename_outfile}
-	grep Uniq ${filename_errlog} |  rev | cut -f 1 | rev > ${filename_kmerfile}
+	grep Uniq ${filename_errlog} | awk '${awk}' > ${filename_kmerfile}
      }
      output {
             File out = filename_outfile
