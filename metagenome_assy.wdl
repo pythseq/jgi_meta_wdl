@@ -30,7 +30,8 @@ task bbcms{
 
     String bbcms_input = "bbcms.input.fastq.gz"
     String filename_counts="counts.metadata.json"
-  
+
+    String filename_outfile="input.corr.fastq.gz"
     String filename_outfile1="input.corr.left.fastq.gz"
     String filename_outfile2="input.corr.right.fastq.gz"
     
@@ -55,15 +56,18 @@ task bbcms{
         bbcms.sh ${java} metadatafile=${filename_counts} mincount=2 highcountfraction=0.6 \
 	    in=${bbcms_input} out1=${filename_outfile1} out2=${filename_outfile2} \
 	    1> ${filename_outlog} 2> ${filename_errlog}
-
+	reformat.sh in1=${filename_outfile1} in2=${filename_outfile2} out=${filename_outfile}
+	grep Uniq ${filename_errlog} |  rev | cut -f 1 | rev > ${filename_kmerfile}
      }
      output {
+            File out = filename_outfile
             File out1 = filename_outfile1
             File out2 = filename_outfile2
             File outreadlen = filename_readlen
             File stdout = filename_outlog
             File stderr = filename_errlog
             File outcounts = filename_counts
+	    Int kmers = read_int(filename_kmerfile)
 
      }
 
