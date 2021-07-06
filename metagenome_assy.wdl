@@ -67,7 +67,7 @@ task bbcms{
             File stdout = filename_outlog
             File stderr = filename_errlog
             File outcounts = filename_counts
-	    Int kmers = read_int(filename_kmerfile)
+	    String kmers = read_string(filename_kmerfile)
 
      }
 
