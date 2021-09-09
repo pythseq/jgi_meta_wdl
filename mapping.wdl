@@ -1,7 +1,8 @@
 workflow mapping {
     Array[File] input_files
     File input_reference
-
+    Boolean dofinalize_bams=true
+    Boolean dotar_bams=false
     String bbtools_container="bryce911/bbtools:38.86"
 
     if (length(input_files) == 1 ){
@@ -16,17 +17,48 @@ workflow mapping {
            }
        }
     }
-    call finalize_bams{
-        input: insing=single_run.outbamfile, inmult=multi_run.outbamfile, container=bbtools_container
+    if(dofinalize_bams){
+    	call finalize_bams{
+        	input: insing=single_run.outbamfile, inmult=multi_run.outbamfile, container=bbtools_container
+    	}
     }
-    output {
-        File final_outbam = finalize_bams.outbam
-        File final_outsam = finalize_bams.outsam
-        File final_outbamidx = finalize_bams.outbamidx
-        File final_outcov = finalize_bams.outcov
-        File final_outflagstat = finalize_bams.outflagstat
+    if (dotar_bams){
+    	call tar_bams{
+    		input: insing=single_run.outbamfile, inmult=multi_run.outbamfile, container=bbtools_container
+    	}
     }
 }
+
+task tar_bams {
+    File? insing
+    Array[File]? inmult
+    String container
+
+    String single = if(defined(insing)) then "1" else "0"
+    String filename_tarbam="bamfiles.tar"
+    String tarlist="bamfiles.txt"
+    String dollar="$"
+
+runtime {
+docker: container
+backend: "r5-120D-ceq"
+memory: "120 GiB"
+cpu:  16
+}
+
+    command{
+        if [ ${single} == "1" ]
+        then
+                echo ${insing} > ${tarlist}
+        else
+                echo ${sep=" " inmult} | tr " " "\n" > ${tarlist}
+        fi
+	tar -cvf ${filename_tarbam} -T ${tarlist}
+    }
+    output{
+        File outtarbam = filename_tarbam
+    }
+}   
 
 task finalize_bams {
     File? insing
@@ -41,7 +73,13 @@ task finalize_bams {
     String filename_cov="pairedMapped_sorted.bam.cov"
     String filename_flagstat="pairedMapped_sorted.bam.flagstat"    
     String dollar="$"
-    runtime { docker: container}
+    #runtime { docker: container}
+runtime {
+docker: container
+backend: "r5-120D-ceq"
+memory: "120 GiB"
+cpu:  16
+}
 
     command{
         if [ ${single} == "1" ]
@@ -72,7 +110,13 @@ task mappingtask {
     String filename_unsorted="pairedMapped.bam"
     String filename_sorted="pairedMapped_sorted.bam"
     String dollar="$"
-    runtime { docker: container}    
+
+runtime {
+docker: container
+backend: "r5-120D-ceq"
+memory: "120 GiB"
+cpu:  16
+}
 
     command{
         bbmap.sh threads=${dollar}(nproc)  nodisk=true \
