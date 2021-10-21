@@ -1,7 +1,7 @@
 workflow metagenome_assy {
     Array[File] input_files
 
-    String bbtools_container="bryce911/bbtools:38.86"
+    String bbtools_container="bryce911/bbtools:38.90"
     String spades_container="bryce911/spades:3.15.2"
 
     call bbcms {
@@ -30,7 +30,8 @@ task bbcms{
 
     String bbcms_input = "bbcms.input.fastq.gz"
     String filename_counts="counts.metadata.json"
-  
+
+    String filename_outfile="input.corr.fastq.gz"
     String filename_outfile1="input.corr.left.fastq.gz"
     String filename_outfile2="input.corr.right.fastq.gz"
     
@@ -40,7 +41,7 @@ task bbcms{
      String filename_kmerfile="unique31mer.txt"
 
      String java="-Xmx100g"
-     String dollar="$"
+     String awk="{print $NF}"
      runtime { docker: container} 
 
      command {
@@ -55,15 +56,18 @@ task bbcms{
         bbcms.sh ${java} metadatafile=${filename_counts} mincount=2 highcountfraction=0.6 \
 	    in=${bbcms_input} out1=${filename_outfile1} out2=${filename_outfile2} \
 	    1> ${filename_outlog} 2> ${filename_errlog}
-
+	reformat.sh in1=${filename_outfile1} in2=${filename_outfile2} out=${filename_outfile}
+	grep Uniq ${filename_errlog} | awk '${awk}' > ${filename_kmerfile}
      }
      output {
+            File out = filename_outfile
             File out1 = filename_outfile1
             File out2 = filename_outfile2
             File outreadlen = filename_readlen
             File stdout = filename_outlog
             File stderr = filename_errlog
             File outcounts = filename_counts
+	    String kmers = read_string(filename_kmerfile)
 
      }
 
@@ -99,10 +103,13 @@ task create_agp {
     String filename_scaffolds="${prefix}.scaffolds.fasta"
     String filename_agp="${prefix}.agp"
     String filename_legend="${prefix}.scaffolds.legend"
+    String java="-Xmx40g"
+
     runtime { docker: container}         
 
+
     command{
-        fungalrelease.sh -Xmx20g in=${scaffolds_in} out=${filename_scaffolds} \
+        fungalrelease.sh ${java} in=${scaffolds_in} out=${filename_scaffolds} \
         outc=${filename_contigs} agp=${filename_agp} legend=${filename_legend} \
         mincontig=200 minscaf=200 sortscaffolds=t sortcontigs=t overwrite=t
     }
