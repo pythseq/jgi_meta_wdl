@@ -1,5 +1,5 @@
-import "metagenome_assy.wdl" as metagenome_assy
-import "mapping.wdl" as mapping
+import "./metagenome/metagenome_assy.wdl" as metagenome_assy
+import "./common/mapping.wdl" as mapping
 
 workflow metagenome_assembly_and_alignment {
     Array[File] input_files
