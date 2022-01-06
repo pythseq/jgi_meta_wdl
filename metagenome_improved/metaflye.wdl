@@ -5,7 +5,6 @@
 
 # For assembling reads
 import "flye.wdl" as flye
-#import "gcpp.wdl" as gcpp
 
 # For polishing with Racon
 import "index.wdl" as index
@@ -28,7 +27,6 @@ workflow metaflye {
   String flye_parameters
   String smrtlink_container
   String racon_container
-  #Array[File] input_bam
   String minimap2_container
   String samtools_container
   String bbtools_container
@@ -52,7 +50,6 @@ workflow metaflye {
 # Polish the assembly with Racon
 # Racon requires three inputs: contigs, reads, and read-to-contig mapping SAM file
   call index.index as index_round1 {
-    #input: round= "rd1" + ".mmi", ref=assy.assembly_fasta
     input: round = "rd1",
     ref = assy.assembly_fasta,
     container = smrtlink_container
@@ -102,29 +99,6 @@ workflow metaflye {
     round = "rd2",
     filename_polished="polished_assembly.fasta"
   }
-  #output {
-  #    File final_polished=racon_round2.outfasta
-  #}
-
-#  OLD BLOCK USING GCPP
-#  # Polish the assembly
-#  call gcpp.run_index as index {
-#    input: smrtlink_container=smrtlink_container,
-#           unpolished_fasta=assy.assembly_fasta
-#  }
-#
-#  call gcpp.run_align as align {
-#    input: smrtlink_container=smrtlink_container,
-#           reference_mmi=index.reference_mmi,
-#           input_bam=input_bam
-#  }
-#
-#  call gcpp.run_gcpp as polish {
-#    input: smrtlink_container=smrtlink_container,
-#           aligned_bam=align.aligned_bam,
-#           aligned_bai=align.aligned_bai,
-#           unpolished_fasta=assy.assembly_fasta
-#  }
 
   # Format polished assembly for release using fungalrelease.sh
   call format_assembly {
@@ -150,7 +124,7 @@ workflow metaflye {
            ref=format_assembly.asm_contigs,
            sam=map.output_sam
   }
-  # Produce readme?
+  # TODO: produce readme?
 }
 
 
@@ -187,7 +161,7 @@ task combine_fastq {
   String combined_fastq_filename
   String bbtools_container
   command {
-    cat ${sep = " " input_fastq } | shifter --image=${bbtools_container} reformat.sh in=stdin.fq.gz out=${combined_fastq_filename} int=f qin=33
+    zcat ${sep = " " input_fastq } | shifter --image=${bbtools_container} reformat.sh in=stdin.fq out=${combined_fastq_filename} int=f qin=33
   }
 
   runtime {
