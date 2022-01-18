@@ -1,6 +1,6 @@
-import "metatranscriptome_assy.wdl" as metatranscriptome_assy
-import "mapping.wdl" as mapping
-import "krona.wdl" as krona
+import "./metatranscriptome/metatranscriptome_assy.wdl" as metatranscriptome_assy
+import "./common/mapping.wdl" as mapping
+import "./metatranscriptome/krona.wdl" as krona
 
 workflow metatranscriptome_assembly_and_alignment {
     Array[File] input_files

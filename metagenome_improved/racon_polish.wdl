@@ -23,7 +23,7 @@ task racon {
   String filename_errlog = "racon_" + round + "_stderr.log"
 
   command {
-    shifter --image=${container} racon -u -t 36  ${input_fastq} ${input_sam} ${ref} 1> ${filename_polished} 2> ${filename_errlog}
+    shifter --image=${container} racon -u -t 36 ${input_fastq} ${input_sam} ${ref} 1> ${filename_polished} 2> ${filename_errlog}
   }
 
   runtime {

@@ -19,6 +19,7 @@ task pbmm2 {
   String filename_outlog = "align_pbmm2_" + round + "_stdout.log"
   String filename_errlog = "align_pbmm2_" + round + "_stderr.log"
   String bam = round + ".bam"
+  # pbmm2 requires single fastq file or fofn (not list of fastqs on command line)
   command {
     shifter --image=${container} pbmm2 align --preset="CCS" --sort ${index} ${fastq} ${bam} 1> ${filename_outlog} 2> ${filename_errlog}
   }

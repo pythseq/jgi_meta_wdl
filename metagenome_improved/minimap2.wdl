@@ -4,16 +4,19 @@ workflow minimap2 {
     author: 'Robert Riley'
   }
 
-  File input_fastq
+  #File input_fastq
+  Array[File] input_fastq
   File assembly_fasta
   String minimap2_container
+  String minimap2_parameters
   String samtools_container
   String bbtools_container
 
   call run_minimap2 {
     input: input_fastq=input_fastq,
            assembly_fasta=assembly_fasta,
-           minimap2_container=minimap2_container
+           minimap2_container=minimap2_container,
+           minimap2_parameters=minimap2_parameters
   }
 
   call run_samtools {
@@ -27,21 +30,29 @@ workflow minimap2 {
            ref=assembly_fasta,
            sam=run_minimap2.output_sam
   }
+
+  call run_samtools_stats {
+    input: samtools_container=samtools_container,
+           sam=run_minimap2.output_sam
+  }
 }
 
 
 
 task run_minimap2 {
-  File input_fastq
+  Array[File] input_fastq
   File assembly_fasta
   String minimap2_container
+  String minimap2_parameters
   String output_sam_filename = "contigs.sam"
   command {
     shifter -i=${minimap2_container} minimap2 \
-    -t 16 -a -x map-pb \
-    ${assembly_fasta} ${input_fastq} > ${output_sam_filename}
-
+    ${minimap2_parameters} \
+    ${assembly_fasta} ${sep = " " input_fastq} > ${output_sam_filename}
   }
+    #-t 16 -a -x map-pb \
+    # Was formerly:
+    #${assembly_fasta} ${input_fastq} > ${output_sam_filename}
 
   runtime {
 
@@ -110,4 +121,31 @@ task run_pileup {
     File output_stderr = output_stderr_filename
   }
 
+}
+
+
+task run_samtools_stats {
+  String samtools_container
+  File sam
+  String output_stats_filename = "contigs.sam.stats"
+  String summary_stats_filename = "summary.stats"
+  command <<<
+    shifter -i=${samtools_container} samtools stats ${sam} > ${output_stats_filename}
+
+    # Pull some stats out of file for readme
+    mapped=`grep "reads mapped:" ${output_stats_filename} | awk '{print $NF}'`
+    total=`grep "raw total sequences:" ${output_stats_filename} | awk '{print $NF}'`
+
+    echo -e "Input mapping read count:"'\t'$total >> ${summary_stats_filename}
+    echo -e "Mapped read count:"'\t\t'$mapped "("`echo "a=100*$mapped/$total; scale=2; (a+0.005)/1" | bc -l`"%)" >> ${summary_stats_filename}
+  >>>
+
+  runtime {
+
+  }
+
+  output {
+    File output_stats = output_stats_filename
+    File summary_stats = summary_stats_filename
+  }
 }

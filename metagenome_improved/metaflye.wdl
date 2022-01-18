@@ -1,11 +1,13 @@
 ################################################################################
 # Assemble PacBio metagenome CCS reads, produce release-formatted fasta file, 
 # mapping files, etc.
+#
+# WIP - getting rid of combined_fastq references
+#     - can pbmm2, racon use multiple fastq?
 ################################################################################
 
 # For assembling reads
 import "flye.wdl" as flye
-#import "gcpp.wdl" as gcpp
 
 # For polishing with Racon
 import "index.wdl" as index
@@ -28,11 +30,11 @@ workflow metaflye {
   String flye_parameters
   String smrtlink_container
   String racon_container
-  #Array[File] input_bam
   String minimap2_container
+  String minimap2_parameters
   String samtools_container
   String bbtools_container
-  String combined_fastq_filename = "reads.mm2.fastq.gz"
+  String combined_fastq_filename = "reads.fastq.gz"
 
 
   # Assemble the metagenome reads
@@ -42,7 +44,12 @@ workflow metaflye {
            flye_parameters = flye_parameters
   }
 
-  # Concatenate input_fastq files to one file for minimap2 and Racon
+  # Concatenate input_fastq files to one file for ppmm2 and Racon
+  # pbmm2 needs either a combined file or fofn
+  # Racon needs a combined file, so we have to make one
+  # For flye and minimap2, combining fastqs is not necessary
+  # so put fastqs individually on command line, more traceable if we have issues
+  # with combining fastqs e.g. GAA-14582
   call combine_fastq {
     input: input_fastq = input_fastq,
            combined_fastq_filename = combined_fastq_filename,
@@ -52,11 +59,11 @@ workflow metaflye {
 # Polish the assembly with Racon
 # Racon requires three inputs: contigs, reads, and read-to-contig mapping SAM file
   call index.index as index_round1 {
-    #input: round= "rd1" + ".mmi", ref=assy.assembly_fasta
-    input: round = "rd1",
+   input: round = "rd1",
     ref = assy.assembly_fasta,
     container = smrtlink_container
   }
+
   call align.pbmm2 {
     input: index = index_round1.outidx,
     container = smrtlink_container,
@@ -69,6 +76,7 @@ workflow metaflye {
     container=smrtlink_container,
     round = "rd1" #filename_sam="round1.filtered.sam"
   }
+
   call racon.racon {
     input: ref=assy.assembly_fasta,
     container=racon_container,
@@ -77,23 +85,27 @@ workflow metaflye {
     round = "rd1",
     filename_polished="polished_assembly.rd1.fasta"
   }
+
   call index.index as index_round2 {
     #input: round= "rd2" + ".mmi", ref=racon.outfasta
     input: round= "rd2",
     ref=racon.outfasta,
     container = smrtlink_container
   }
+
   call align.pbmm2  as align_round2 {
     input: index = index_round2.outidx,
     container = smrtlink_container,
     fastq = combine_fastq.combined_fastq,
     round = "rd2" #bam = "rd2.bam"
   }
+
   call sort.sort as sort_round2 {
     input: bam=align_round2.outbam,
     container=smrtlink_container,
     round= "rd2" #filename_sam="round2.filtered.sam"
   }
+
   call racon.racon as racon_round2 {
     input: ref=racon.outfasta,
     container=racon_container,
@@ -102,29 +114,6 @@ workflow metaflye {
     round = "rd2",
     filename_polished="polished_assembly.fasta"
   }
-  #output {
-  #    File final_polished=racon_round2.outfasta
-  #}
-
-#  OLD BLOCK USING GCPP
-#  # Polish the assembly
-#  call gcpp.run_index as index {
-#    input: smrtlink_container=smrtlink_container,
-#           unpolished_fasta=assy.assembly_fasta
-#  }
-#
-#  call gcpp.run_align as align {
-#    input: smrtlink_container=smrtlink_container,
-#           reference_mmi=index.reference_mmi,
-#           input_bam=input_bam
-#  }
-#
-#  call gcpp.run_gcpp as polish {
-#    input: smrtlink_container=smrtlink_container,
-#           aligned_bam=align.aligned_bam,
-#           aligned_bai=align.aligned_bai,
-#           unpolished_fasta=assy.assembly_fasta
-#  }
 
   # Format polished assembly for release using fungalrelease.sh
   call format_assembly {
@@ -134,9 +123,10 @@ workflow metaflye {
 
   # Mapping
   call minimap2.run_minimap2 as map {
-    input: input_fastq=combine_fastq.combined_fastq,
+    input: input_fastq=input_fastq,
            assembly_fasta=format_assembly.asm_contigs,
-           minimap2_container=minimap2_container
+           minimap2_container=minimap2_container,
+           minimap2_parameters=minimap2_parameters
   }
 
   call minimap2.run_samtools as mm_sort {
@@ -150,7 +140,17 @@ workflow metaflye {
            ref=format_assembly.asm_contigs,
            sam=map.output_sam
   }
-  # Produce readme?
+
+  call minimap2.run_samtools_stats as stats {
+    input: samtools_container=samtools_container,
+           sam=map.output_sam
+  }
+
+  call check_read_counts as check {
+    input: input_fastq = input_fastq,
+           combined_fastq=combine_fastq.combined_fastq
+  }
+  # TODO: produce readme?
 }
 
 
@@ -187,7 +187,7 @@ task combine_fastq {
   String combined_fastq_filename
   String bbtools_container
   command {
-    cat ${sep = " " input_fastq } | shifter --image=${bbtools_container} reformat.sh in=stdin.fq.gz out=${combined_fastq_filename} int=f qin=33
+    zcat ${sep = " " input_fastq} | shifter --image=${bbtools_container} reformat.sh in=stdin.fq out=${combined_fastq_filename} int=f qin=33
   }
 
   runtime {
@@ -199,3 +199,38 @@ task combine_fastq {
   }
 }
 
+
+task check_read_counts {
+  Array[File] input_fastq
+  File combined_fastq
+  String output_filename = "read_count_report.txt"
+  command <<<
+    echo "Input reads:" >> ${output_filename}
+    total=0
+    for fq in ${sep = " " input_fastq}
+    do
+      count=`echo $(zcat $fq | wc -l) /4 | bc`
+      echo $fq $count >> ${output_filename}
+      total=`expr $total + $count`
+    done
+    echo "Total = $total" >> ${output_filename}
+    echo "Combined reads:" >> ${output_filename}
+    fq=${combined_fastq}
+    merged_total=`echo $(zcat $fq | wc -l) /4 | bc`
+    echo "Merged total = $merged_total" >> ${output_filename}
+    if [ $total == $merged_total ]
+    then
+      echo "Read counts match" >> ${output_filename}
+    else
+      echo "WARNING: read counts don't match" >> ${output_filename}
+    fi
+  >>>
+
+  runtime {
+
+  }
+
+  output {
+    File output_file=output_filename
+  }
+}

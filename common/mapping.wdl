@@ -68,17 +68,18 @@ task mappingtask {
     File reads
     File reference
     String container
-
+    String java="-Xmx100g"
     String filename_unsorted="pairedMapped.bam"
     String filename_sorted="pairedMapped_sorted.bam"
     String dollar="$"
-    runtime { docker: container}    
+    runtime { docker: container}
 
     command{
-        bbmap.sh threads=${dollar}(nproc)  nodisk=true \
+        bbmap.sh ${java} threads=16  nodisk=true \
         interleaved=true ambiguous=random rgid=filename \
         in=${reads} ref=${reference} out=${filename_unsorted}
-        samtools sort -m100M -@ ${dollar}(nproc) ${filename_unsorted} -o ${filename_sorted};
+        samtools sort -m6G -@ 16 ${filename_unsorted} -o ${filename_sorted};
+	touch ${filename_sorted};
   }
   output{
       File outbamfile = filename_sorted
